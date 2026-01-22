@@ -1,0 +1,33 @@
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  password VARCHAR(100) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE mahasiswa (
+  id_mahasiswa INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNIQUE,
+  nim VARCHAR(20) NOT NULL,
+  nama VARCHAR(100) NOT NULL,
+  email VARCHAR(100),
+  tanggal_lahir DATE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (user_id)
+    REFERENCES users(id)
+    ON DELETE CASCADE
+);
+
+CREATE TABLE buku (
+  id_buku INT AUTO_INCREMENT PRIMARY KEY,
+  mahasiswa_id INT,
+  judul VARCHAR(150) NOT NULL,
+  penulis VARCHAR(100),
+  tahun INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (mahasiswa_id)
+    REFERENCES mahasiswa(id_mahasiswa)
+    ON DELETE CASCADE
+);

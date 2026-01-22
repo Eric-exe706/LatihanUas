@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>List Mahasiswa</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,.1);
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background: #f0f0f0;
+    }
+
+    button {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-edit { background: #ffc107; }
+    .btn-delete { background: #dc3545; color: white; }
+    .btn-add { background: #007bff; color: white; }
+    .btn-back { background: #6c757d; color: white; }
+
+    /* modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.4);
+    }
+
+    .modal-content {
+      background: white;
+      max-width: 400px;
+      margin: 10% auto;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+      max-width: 350px;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>📋 List Mahasiswa</h1>
+
+  <button class="btn-add" onclick="openModal()">+ Tambah Mahasiswa</button>
+  <a href="/user-management"><button class="btn-back">← Kembali</button></a>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>NIM</th>
+        <th>Nama</th>
+        <th>Username</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody id="mahasiswaTable"></tbody>
+  </table>
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <h3 id="modalTitle">Tambah Mahasiswa</h3>
+
+    <input type="hidden" id="id_mahasiswa">
+
+    <div class="form-group">
+      <label>User ID</label>
+      <input type="number" id="user_id" required>
+    </div>
+
+    <div class="form-group">
+      <label>NIM</label>
+      <input type="text" id="nim" required>
+    </div>
+
+    <div class="form-group">
+      <label>Nama</label>
+      <input type="text" id="nama" required>
+    </div>
+
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="email">
+    </div>
+
+    <div class="form-group">
+      <label>Tanggal Lahir</label>
+      <input type="date" id="tanggal_lahir">
+    </div>
+
+    <button onclick="saveMahasiswa()" class="btn-add">Simpan</button>
+    <button onclick="closeModal()">Batal</button>
+  </div>
+</div>
+
+<div id="bukuModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeBukuModal()">&times;</span>
+
+    <h3 id="bukuTitle"></h3>
+
+    <!-- FORM TAMBAH BUKU -->
+    <form id="bukuForm">
+      <input type="hidden" id="b_mahasiswa_id">
+
+      <div class="form-group">
+        <label>Judul Buku *</label>
+        <input type="text" id="b_judul" required>
+      </div>
+
+      <div class="form-group">
+        <label>Penulis</label>
+        <input type="text" id="b_penulis">
+      </div>
+
+      <div class="form-group">
+        <label>Tahun Terbit</label>
+        <input type="number" id="b_tahun">
+      </div>
+
+      <button type="submit" class="btn btn-success btn-sm">
+        + Tambah Buku
+      </button>
+    </form>
+
+    <hr>
+
+    <!-- TABEL BUKU -->
+    <table>
+      <thead>
+        <tr>
+          <th>Judul</th>
+          <th>Penulis</th>
+          <th>Tahun</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="bukuTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="bukuModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeBukuModal()">&times;</span>
+    <h3 id="bukuTitle"></h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Judul</th>
+          <th>Penulis</th>
+          <th>Tahun</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="bukuTable"></tbody>
+    </table>
+  </div>
+</div>
+
+
+<script>
+let editMode = false;
+
+// load data
+async function loadMahasiswa() {
+  const res = await fetch('/api/mahasiswa');
+  const result = await res.json();
+
+  const tbody = document.getElementById('mahasiswaTable');
+  tbody.innerHTML = '';
+
+  result.data.forEach(m => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${m.id_mahasiswa}</td>
+        <td>${m.nim}</td>
+        <td>${m.nama}</td>
+        <td>${m.username}</td>
+        <td>
+          <button class="btn-edit" onclick='editMahasiswa(${JSON.stringify(m)})'>Edit</button>
+          <button class="btn-delete" onclick="hapusMahasiswa(${m.id_mahasiswa})">Hapus</button>
+          <button class="btn btn-primary btn-sm" onclick="lihatBuku(${m.id_mahasiswa}, '${m.nama}')">
+  📚 Lihat
+</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+// modal
+function openModal() {
+  editMode = false;
+  document.getElementById('modalTitle').innerText = 'Tambah Mahasiswa';
+  document.getElementById('modal').style.display = 'block';
+  document.querySelectorAll('#modal input').forEach(i => i.value = '');
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+}
+
+// save
+async function saveMahasiswa() {
+  const data = {
+    user_id: user_id.value,
+    nim: nim.value,
+    nama: nama.value,
+    email: email.value,
+    tanggal_lahir: tanggal_lahir.value
+  };
+
+  let url = '/api/mahasiswa';
+  let method = 'POST';
+
+  if (editMode) {
+    url += '/' + id_mahasiswa.value;
+    method = 'PUT';
+  }
+
+  const res = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+
+  const result = await res.json();
+  alert(result.message);
+
+  if (result.success) {
+    closeModal();
+    loadMahasiswa();
+  }
+}
+
+async function lihatBuku(id, nama) {
+  document.getElementById('bukuTitle').innerText =
+    `Buku dipinjam oleh ${nama}`;
+
+  const res = await fetch(`/api/mahasiswa/${id}/buku`);
+  const result = await res.json();
+
+  const tbody = document.getElementById('bukuTable');
+  tbody.innerHTML = '';
+
+  if (result.data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4">Belum meminjam buku</td></tr>`;
+  }
+
+  result.data.forEach(b => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${b.judul}</td>
+        <td>${b.penulis || '-'}</td>
+        <td>${b.tahun || '-'}</td>
+        <td>
+          <button class="btn btn-danger btn-sm"
+            onclick="hapusBuku(${b.id_buku}, ${id})">
+            Hapus
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+
+  document.getElementById('bukuModal').style.display = 'block';
+}
+
+async function hapusBuku(idBuku, idMahasiswa) {
+  if (!confirm('Hapus buku ini?')) return;
+
+  await fetch(`/api/buku/${idBuku}`, { method: 'DELETE' });
+  lihatBuku(idMahasiswa, '');
+}
+
+// edit
+function editMahasiswa(m) {
+  editMode = true;
+  modal.style.display = 'block';
+  modalTitle.innerText = 'Edit Mahasiswa';
+
+  id_mahasiswa.value = m.id_mahasiswa;
+  user_id.value = '';
+  nim.value = m.nim;
+  nama.value = m.nama;
+  email.value = m.email || '';
+  tanggal_lahir.value = m.tanggal_lahir?.split('T')[0] || '';
+}
+
+// delete
+async function hapusMahasiswa(id) {
+  if (!confirm('Hapus mahasiswa ini? Buku yang dipinjam juga akan terhapus')) return;
+
+  const res = await fetch('/api/mahasiswa/' + id, { method: 'DELETE' });
+  const result = await res.json();
+  alert(result.message);
+
+  if (result.success) loadMahasiswa();
+}
+
+let currentMahasiswaId = null;
+
+async function lihatBuku(id, nama) {
+  currentMahasiswaId = id;
+
+  document.getElementById('bukuTitle').innerText =
+    `Buku dipinjam oleh ${nama}`;
+
+  document.getElementById('b_mahasiswa_id').value = id;
+
+  await loadBuku(id);
+  document.getElementById('bukuModal').style.display = 'block';
+}
+
+async function loadBuku(id) {
+  const res = await fetch(`/api/mahasiswa/${id}/buku`);
+  const result = await res.json();
+
+  const tbody = document.getElementById('bukuTable');
+  tbody.innerHTML = '';
+
+  if (result.data.length === 0) {
+    tbody.innerHTML = `
+      <tr><td colspan="4">Belum meminjam buku</td></tr>
+    `;
+    return;
+  }
+
+  result.data.forEach(b => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${b.judul}</td>
+        <td>${b.penulis || '-'}</td>
+        <td>${b.tahun || '-'}</td>
+        <td>
+          <button class="btn btn-danger btn-sm"
+            onclick="hapusBuku(${b.id_buku})">
+            Hapus
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+function closeBukuModal() {
+  document.getElementById('bukuModal').style.display = 'none';
+}
+
+document.getElementById('bukuForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const data = {
+    mahasiswa_id: document.getElementById('b_mahasiswa_id').value,
+    judul: document.getElementById('b_judul').value,
+    penulis: document.getElementById('b_penulis').value,
+    tahun: document.getElementById('b_tahun').value
+  };
+
+  const res = await fetch('/api/buku', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+
+  const result = await res.json();
+  alert(result.message);
+
+  if (result.success) {
+    document.getElementById('bukuForm').reset();
+    loadBuku(currentMahasiswaId); // refresh tabel
+  }
+});
+async function hapusBuku(id) {
+  if (!confirm('Hapus buku ini?')) return;
+
+  await fetch(`/api/buku/${id}`, { method: 'DELETE' });
+  loadBuku(currentMahasiswaId);
+}
+
+loadMahasiswa();
+</script>
+
+</body>
+</html>
