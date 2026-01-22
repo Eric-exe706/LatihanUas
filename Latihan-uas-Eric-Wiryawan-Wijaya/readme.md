@@ -38,7 +38,8 @@ CREATE TABLE buku (
     ON DELETE CASCADE
 );
 
-// atau bisa langsung import melalui dbkampus.sql
+// atau bisa langsung import melalui /config/dbkampus.sql
 
-2. npm install
-3. npm start
+2. cd Latihan-uas-Eric-Wiryawan-Wijaya
+3. npm install
+4. npm start
